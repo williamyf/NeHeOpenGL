@@ -30,12 +30,18 @@
     <ClInclude Include="NeHeOpenGL.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\Inc\GLWindow.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="NeHeOpenGL.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Src\GLWindow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
