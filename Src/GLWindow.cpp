@@ -1,19 +1,32 @@
 #include "../Inc/GLWindow.h"
 #include <Strsafe.h>
+#include <tchar.h>
+
+namespace
+{
+	HGLRC		g_hRC = NULL;				// 窗口着色描述表句柄
+	HDC			g_hDC = NULL;				// OpenGL渲染描述表句柄
+	HWND		g_hWnd = NULL;				// 保存我们的窗口句柄
+	HINSTANCE	g_hInstance = NULL;			// 保存程序的实例
+
+	bool		g_keys[256];				// 保存键盘按键的数组
+	bool		g_active = TRUE;			// 窗口的活动标志，缺省为TRUE
+	bool		g_fullscreen = TRUE;		// 全屏标志缺省，缺省设定成全屏模式
+}
 
 LRESULT	CALLBACK WndProc2(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)								// 检查Windows消息
 	{
-	case WM_ACTIVATE:						// 监视窗口激活消息
+	case WM_ACTIVATE:							// 监视窗口激活消息
 	{
 		if (!HIWORD(wParam))					// 检查最小化状态
 		{
-			active = TRUE;					// 程序处于激活状态
+			g_active = TRUE;					// 程序处于激活状态
 		}
 		else
 		{
-			active = FALSE;					// 程序不再激活
+			g_active = FALSE;					// 程序不再激活
 		}
 
 		return 0;						// 返回消息循环
@@ -35,12 +48,12 @@ LRESULT	CALLBACK WndProc2(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	case WM_KEYDOWN:						// 有键按下么?
 	{
-		keys[wParam] = TRUE;					// 如果是，设为TRUE
+		g_keys[wParam] = TRUE;					// 如果是，设为TRUE
 		return 0;						// 返回
 	}
 	case WM_KEYUP:							// 有键放开么?
 	{
-		keys[wParam] = FALSE;					// 如果是，设为FALSE
+		g_keys[wParam] = FALSE;					// 如果是，设为FALSE
 		return 0;						// 返回
 	}
 	case WM_SIZE:							// 调整OpenGL窗口大小
@@ -91,7 +104,7 @@ GLvoid ReSizeGLScene(GLsizei width, GLsizei height)
 
 }
 
-BOOL CreateGLWindow(char* title, int width, int height, int bits, bool fullscreenflag)
+BOOL CreateGLWindow(TCHAR* title, int width, int height, int bits, bool fullscreenflag)
 {
 	GLuint		PixelFormat;	// 保存查找匹配的结果
 	WNDCLASS	wc;				// 窗口类结构
@@ -103,28 +116,28 @@ BOOL CreateGLWindow(char* title, int width, int height, int bits, bool fullscree
 	WindowRect.top = (long)0;			// 将Top    设为 0
 	WindowRect.bottom = (long)height;	// 将Bottom 设为要求的高度
 
-	fullscreen = fullscreenflag;		// 设置全局全屏标志
+	g_fullscreen = fullscreenflag;		// 设置全局全屏标志
 
-	hInstance = GetModuleHandle(NULL);	// 取得我们窗口的实例
+	g_hInstance = GetModuleHandle(NULL);	// 取得我们窗口的实例
 
 	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;		// 移动时重画，并为窗口取得DC
 	wc.lpfnWndProc = (WNDPROC)WndProc2;					// WndProc处理消息
 	wc.cbClsExtra = 0;									// 无额外窗口数据
 	wc.cbWndExtra = 0;									// 无额外窗口数据
-	wc.hInstance = hInstance;							// 设置实例
+	wc.hInstance = g_hInstance;							// 设置实例
 	wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);				// 装入缺省图标
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);			// 装入鼠标指针
 	wc.hbrBackground = NULL;							// GL不需要背景
 	wc.lpszMenuName = NULL;								// 不需要菜单
-	wc.lpszClassName = "OpenG";							// 设定类名字
+	wc.lpszClassName = TEXT("OpenG");							// 设定类名字
 	if (!RegisterClass(&wc))							// 尝试注册窗口类
 	{
-		MessageBox(NULL, "注册窗口失败", "错误", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(NULL, _T("注册窗口失败"), _T("错误"), MB_OK | MB_ICONEXCLAMATION);
 		ErrorExit(TEXT("RegisterClass"));
 		return FALSE;
 	}
 
-	if (fullscreen)	// 要尝试全屏模式吗?
+	if (g_fullscreen)	// 要尝试全屏模式吗?
 	{
 		DEVMODE dmScreenSettings;									// 设备模式
 		memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));		// 确保内存清空为零
@@ -138,20 +151,20 @@ BOOL CreateGLWindow(char* title, int width, int height, int bits, bool fullscree
 		if (ChangeDisplaySettings(&dmScreenSettings, CDS_FULLSCREEN) != DISP_CHANGE_SUCCESSFUL)
 		{
 			// 若模式失败，提供两个选项：退出或在窗口内运行。
-			if (MessageBox(NULL, "全屏模式在当前显卡上设置失败！\n使用窗口模式？", "NeHe G", MB_YESNO | MB_ICONEXCLAMATION) == IDYES)
+			if (MessageBox(NULL, _T("全屏模式在当前显卡上设置失败！\n使用窗口模式？"), _T("NeHe G"), MB_YESNO | MB_ICONEXCLAMATION) == IDYES)
 			{
-				fullscreen = FALSE;	// 选择窗口模式(Fullscreen=FALSE)
+				g_fullscreen = FALSE;	// 选择窗口模式(Fullscreen=FALSE)
 			}
 			else
 			{
 				// 弹出一个对话框，告诉用户程序结束
-				MessageBox(NULL, "程序将被关闭", "错误", MB_OK | MB_ICONSTOP);
+				MessageBox(NULL, _T("程序将被关闭"), _T("错误"), MB_OK | MB_ICONSTOP);
 				return FALSE;
 			}
 		}
 	}
 
-	if (fullscreen)								// 仍处于全屏模式吗?
+	if (g_fullscreen)								// 仍处于全屏模式吗?
 	{
 		dwExStyle = WS_EX_APPWINDOW;			// 扩展窗体风格
 		dwStyle = WS_POPUP;						// 窗体风格
@@ -165,8 +178,8 @@ BOOL CreateGLWindow(char* title, int width, int height, int bits, bool fullscree
 
 	AdjustWindowRectEx(&WindowRect, dwStyle, FALSE, dwExStyle);	// 调整窗口达到真正要求的大小
 
-	if (!(hWnd = CreateWindowEx(dwExStyle,				// 扩展窗体风格
-								"OpenG",				// 类名字
+	if (!(g_hWnd = CreateWindowEx(dwExStyle,				// 扩展窗体风格
+								_T("OpenG"),				// 类名字
 								title,					// 窗口标题
 								WS_CLIPSIBLINGS |		// 必须的窗体风格属性
 								WS_CLIPCHILDREN |		// 必须的窗体风格属性
@@ -176,12 +189,12 @@ BOOL CreateGLWindow(char* title, int width, int height, int bits, bool fullscree
 								WindowRect.bottom - WindowRect.top,	// 计算调整好的窗口高度
 								NULL,					// 无父窗口
 								NULL,					// 无菜单
-								hInstance,				// 实例
+								g_hInstance,				// 实例
 								NULL))					// 不向WM_CREATE传递任何东东
 		)
 	{
 		KillGLWindow();	// 重置显示区
-		MessageBox(NULL, "不能创建一个窗口设备描述表", "错误", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(NULL, _T("不能创建一个窗口设备描述表"), _T("错误"), MB_OK | MB_ICONEXCLAMATION);
 		ErrorExit(TEXT("CreateWindowEx"));
 		return FALSE;
 	}
@@ -209,51 +222,51 @@ BOOL CreateGLWindow(char* title, int width, int height, int bits, bool fullscree
 		0, 0, 0							// 忽略层遮罩
 	};
 
-	if (!(hDC = GetDC(hWnd)))			// 取得设备描述表了么?
+	if (!(g_hDC = GetDC(g_hWnd)))			// 取得设备描述表了么?
 	{
 		KillGLWindow();					// 重置显示区
-		MessageBox(NULL, "不能创建一种相匹配的像素格式", "错误", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(NULL, _T("不能创建一种相匹配的像素格式"),_T( "错误"), MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;					// 返回 FALSE
 	}
 
-	if (!(PixelFormat = ChoosePixelFormat(hDC, &pfd)))	// Windows 找到相应的象素格式了吗?
+	if (!(PixelFormat = ChoosePixelFormat(g_hDC, &pfd)))	// Windows 找到相应的象素格式了吗?
 	{
 		KillGLWindow();	// 重置显示区
-		MessageBox(NULL, "不能设置像素格式", "错误", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(NULL, _T("不能设置像素格式"), _T("错误"), MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
 	}
 
-	if (!SetPixelFormat(hDC, PixelFormat, &pfd))	// 能够设置象素格式么?
+	if (!SetPixelFormat(g_hDC, PixelFormat, &pfd))	// 能够设置象素格式么?
 	{
 		KillGLWindow();	// 重置显示区
-		MessageBox(NULL, "不能设置像素格式", "错误", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(NULL, _T("不能设置像素格式"), _T("错误"), MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
 	}
 
-	if (!(hRC = wglCreateContext(hDC)))		// 能否取得着色描述表?
+	if (!(g_hRC = wglCreateContext(g_hDC)))		// 能否取得着色描述表?
 	{
 		KillGLWindow();	// 重置显示区
-		MessageBox(NULL, "不能创建OpenGL渲染描述表", "错误", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(NULL, _T("不能创建OpenGL渲染描述表"), _T("错误"), MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
 	}
 
-	if (!wglMakeCurrent(hDC, hRC))		// 尝试激活着色描述表
+	if (!wglMakeCurrent(g_hDC, g_hRC))		// 尝试激活着色描述表
 	{
 		KillGLWindow();	// 重置显示区
-		MessageBox(NULL, "不能激活当前的OpenGL渲然描述表", "错误", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(NULL, _T("不能激活当前的OpenGL渲然描述表"), _T("错误"), MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
 	}
 
-	ShowWindow(hWnd, SW_SHOW);					// 显示窗口
-	SetForegroundWindow(hWnd);					// 略略提高优先级
-	SetFocus(hWnd);								// 设置键盘的焦点至此窗口
+	ShowWindow(g_hWnd, SW_SHOW);					// 显示窗口
+	SetForegroundWindow(g_hWnd);					// 略略提高优先级
+	SetFocus(g_hWnd);								// 设置键盘的焦点至此窗口
 
 	ReSizeGLScene(width, height);				// 设置透视 GL 屏幕
 	
 	if (!InitGL())								// 初始化新建的GL窗口
 	{
 		KillGLWindow();							// 重置显示区
-		MessageBox(NULL, "Initialization Failed.", "ERROR", MB_OK | MB_ICONEXCLAMATION);
+		MessageBox(NULL, _T("Initialization Failed."), _T("ERROR"), MB_OK | MB_ICONEXCLAMATION);
 		return FALSE;
 	}
 
@@ -262,37 +275,37 @@ BOOL CreateGLWindow(char* title, int width, int height, int bits, bool fullscree
 
 GLvoid KillGLWindow(GLvoid)
 {
-	if (fullscreen)								// 我们处于全屏模式吗?
+	if (g_fullscreen)								// 我们处于全屏模式吗?
 	{
 		ChangeDisplaySettings(NULL, 0);					// 是的话，切换回桌面
 		ShowCursor(TRUE);						// 显示鼠标指针
 	}
-	if (hRC)								// 我们拥有OpenGL渲染描述表吗?
+	if (g_hRC)								// 我们拥有OpenGL渲染描述表吗?
 	{
 		if (!wglMakeCurrent(NULL, NULL))					// 我们能否释放DC和RC描述表?
 		{
-			MessageBox(NULL, "释放DC或RC失败。", "关闭错误", MB_OK | MB_ICONINFORMATION);
+			MessageBox(NULL, _T("释放DC或RC失败。"), _T("关闭错误"), MB_OK | MB_ICONINFORMATION);
 		}
-		if (!wglDeleteContext(hRC))					// 我们能否删除RC?
+		if (!wglDeleteContext(g_hRC))					// 我们能否删除RC?
 		{
-			MessageBox(NULL, "释放RC失败。", "关闭错误", MB_OK | MB_ICONINFORMATION);
+			MessageBox(NULL, _T("释放RC失败。"), _T("关闭错误"), MB_OK | MB_ICONINFORMATION);
 		}
-		hRC = NULL;							// 将RC设为 NULL
+		g_hRC = NULL;							// 将RC设为 NULL
 	}
-	if (hDC && !ReleaseDC(hWnd, hDC))					// 我们能否释放 DC?
+	if (g_hDC && !ReleaseDC(g_hWnd, g_hDC))					// 我们能否释放 DC?
 	{
-		MessageBox(NULL, "释放DC失败。", "关闭错误", MB_OK | MB_ICONINFORMATION);
-		hDC = NULL;							// 将 DC 设为 NULL
+		MessageBox(NULL, _T("释放DC失败。"), _T("关闭错误"), MB_OK | MB_ICONINFORMATION);
+		g_hDC = NULL;							// 将 DC 设为 NULL
 	}
-	if (hWnd && !DestroyWindow(hWnd))					// 能否销毁窗口?
+	if (g_hWnd && !DestroyWindow(g_hWnd))					// 能否销毁窗口?
 	{
-		MessageBox(NULL, "释放窗口句柄失败。", "关闭错误", MB_OK | MB_ICONINFORMATION);
-		hWnd = NULL;							// 将 hWnd 设为 NULL
+		MessageBox(NULL, _T("释放窗口句柄失败。"), _T("关闭错误"), MB_OK | MB_ICONINFORMATION);
+		g_hWnd = NULL;							// 将 g_hWnd 设为 NULL
 	}
-	if (!UnregisterClass("OpenG", hInstance))				// 能否注销类?
+	if (!UnregisterClass(_T("OpenG"), g_hInstance))				// 能否注销类?
 	{
-		MessageBox(NULL, "不能注销窗口类。", "关闭错误", MB_OK | MB_ICONINFORMATION);
-		hInstance = NULL;							// 将 hInstance 设为 NULL
+		MessageBox(NULL, _T("不能注销窗口类。"), _T("关闭错误"), MB_OK | MB_ICONINFORMATION);
+		g_hInstance = NULL;							// 将 g_hInstance 设为 NULL
 	}
 
 }
@@ -315,70 +328,73 @@ void ErrorExit(LPTSTR lpszFunction)
 	ExitProcess(dw);
 }
 
-int WINAPI WinMain(	HINSTANCE	hInstance,				// 当前窗口实例
-					HINSTANCE	hPrevInstance,			// 前一个窗口实例
-					LPSTR		lpCmdLine,				// 命令行参数
-					int			nCmdShow)				// 窗口显示状态
+int WINAPI _tWinMain2(	HINSTANCE	hInstance,				// 当前窗口实例
+						HINSTANCE	hPrevInstance,			// 前一个窗口实例 always NULL
+						LPTSTR		lpCmdLine,				// 命令行参数
+						int			nCmdShow)				// 窗口显示状态
 {
 	MSG		msg;			// Windowsx消息结构
 	BOOL	done = FALSE;	// 用来退出循环的Bool 变量
 
 	// 提示用户选择运行模式
-	if (MessageBox(NULL, "你想在全屏模式下运行么？", "设置全屏模式", MB_YESNO | MB_ICONQUESTION) == IDNO)
+	if (MessageBox(NULL, _T("你想在全屏模式下运行么？"), _T("设置全屏模式"), MB_YESNO | MB_ICONQUESTION) == IDNO)
 	{
-		fullscreen = FALSE;	// FALSE为窗口模式
+		g_fullscreen = FALSE;	// FALSE为窗口模式
 	}
 
 	// 创建OpenGL窗口
 	// CreateGLWindow函数的参数依次为标题、宽度、高度、色彩深度，以及全屏标志。
-	if (!CreateGLWindow("NeHe's OpenGL程序框架", 640, 480, 16, fullscreen))
+	if (!CreateGLWindow(_T("NeHe's OpenGL程序框架"), 640, 480, 16, g_fullscreen))
 	{
 		return 0;	// 失败退出
 	}
 
-	while (!done)								// 保持循环直到 done=TRUE
+	while (!done)	// 保持循环直到 done=TRUE
 	{
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))			// 有消息在等待吗?
+		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))	// 有消息在等待吗?
 		{
-			if (msg.message == WM_QUIT)				// 收到退出消息?
+			if (msg.message == WM_QUIT)					// 收到退出消息?
 			{
-				done = TRUE;					// 是，则done=TRUE
+				done = TRUE;							// 是，则done=TRUE
 			}
-			else							// 不是，处理窗口消息
+			else										// 不是，处理窗口消息
 			{
-				TranslateMessage(&msg);				// 翻译消息
-				DispatchMessage(&msg);				// 发送消息
+				TranslateMessage(&msg);					// 翻译消息
+				DispatchMessage(&msg);					// 发送消息
 			}
 		}
-		else								// 如果没有消息
+		else											// 如果没有消息
 		{
 			// 绘制场景。监视ESC键和来自DrawGLScene()的退出消息
-			if (active)						// 程序激活的么?
+			if (g_active)									// 程序激活的么?
 			{
-				if (keys[VK_ESCAPE])				// ESC 按下了么?
+				if (g_keys[VK_ESCAPE])					// ESC 按下了么?
 				{
-					done = TRUE;				// ESC 发出退出信号
+					done = TRUE;						// ESC 发出退出信号
 				}
-				else						// 不是退出的时候，刷新屏幕
+				else									// 不是退出的时候，刷新屏幕
 				{
-					DrawGLScene();				// 绘制场景
-					SwapBuffers(hDC);			// 交换缓存 (双缓存)
+					DrawGLScene();						// 绘制场景
+					SwapBuffers(g_hDC);					// 交换缓存 (双缓存)
 				}
 			}
-			if (keys[VK_F1])					// F1键按下了么?
+
+			if (g_keys[VK_F1])							// F1键按下了么?
 			{
-				keys[VK_F1] = FALSE;				// 若是，使对应的Key数组中的值为 FALSE
-				KillGLWindow();					// 销毁当前的窗口
-				fullscreen = !fullscreen;				// 切换 全屏 / 窗口 模式
-														// 重建 OpenGL 窗口
-				if (!CreateGLWindow("NeHe's OpenGL 程序框架", 640, 480, 16, fullscreen))
+				g_keys[VK_F1] = FALSE;					// 若是，使对应的Key数组中的值为 FALSE
+				KillGLWindow();							// 销毁当前的窗口
+				g_fullscreen = !g_fullscreen;				// 切换 全屏 / 窗口 模式
+				
+				// 重建 OpenGL 窗口
+				if (!CreateGLWindow(_T("NeHe's OpenGL 程序框架"), 640, 480, 16, g_fullscreen))
 				{
-					return 0;				// 如果窗口未能创建，程序退出
+					return 0; // 如果窗口未能创建，程序退出
 				}
 			}
 		}
 	}
+
 	// 关闭程序
-	KillGLWindow();								// 销毁窗口
-	return (msg.wParam);							// 退出程序
+	KillGLWindow();			// 销毁窗口
+	return (msg.wParam);	// 退出程序
 }
