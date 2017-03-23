@@ -16,9 +16,9 @@ namespace
 
 LRESULT	CALLBACK WndProc2(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	switch (uMsg)								// 检查Windows消息
+	switch (uMsg)							// 检查Windows消息
 	{
-	case WM_ACTIVATE:							// 监视窗口激活消息
+	case WM_ACTIVATE:						// 监视窗口激活消息
 	{
 		if (!HIWORD(wParam))					// 检查最小化状态
 		{
@@ -59,7 +59,7 @@ LRESULT	CALLBACK WndProc2(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_SIZE:							// 调整OpenGL窗口大小
 	{
 		ReSizeGLScene(LOWORD(lParam), HIWORD(lParam));		// LoWord=Width,HiWord=Height
-		return 0;						// 返回
+		return 0;							// 返回
 	}
 	}
 	// 向 DefWindowProc传递所有未处理的消息。
@@ -69,38 +69,68 @@ LRESULT	CALLBACK WndProc2(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int InitGL(GLvoid)
 {
-	glShadeModel(GL_SMOOTH);						// 启用阴影平滑
-	glClearColor(1.0f, 0.0f, 0.0f, 0.0f);					// 黑色背景
-	glClearDepth(1.0f);							// 设置深度缓存
-	glEnable(GL_DEPTH_TEST);						// 启用深度测试
-	glDepthFunc(GL_LEQUAL);							// 所作深度测试的类型
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);			// 告诉系统对透视进行修正
-	return TRUE;								// 初始化 OK
+	glShadeModel(GL_SMOOTH);							// 启用阴影平滑
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);				// 黑色背景
+	glClearDepth(1.0f);									// 设置深度缓存
+	glEnable(GL_DEPTH_TEST);							// 启用深度测试
+	glDepthFunc(GL_LEQUAL);								// 所作深度测试的类型
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);	// 告诉系统对透视进行修正
+	return TRUE;										// 初始化 OK
 }
 
-int DrawGLScene(GLvoid)
+#define LESSON		2
+#define _DrawLesson(l)	DrawLesson##l();
+#define DrawLesson(l)	_DrawLesson(l)
+
+void DrawLesson2()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		// 清除屏幕及深度缓存
+	glLoadIdentity();										// 重置当前的模型观察矩阵
+	
+	glTranslatef(-1.5f, 0.0f, -6.0f);						// 左移 1.5 单位，并移入屏幕 6.0
+	glBegin(GL_TRIANGLES);									// 绘制三角形
+	glVertex3f(0.0f, 1.0f, 0.0f);							// 上顶点
+	glVertex3f(-1.0f, -1.0f, 0.0f);							// 左下
+	glVertex3f(1.0f, -1.0f, 0.0f);							// 右下
+	glEnd();												// 三角形绘制结束
+
+	glTranslatef(3.0f, 0.0f, 0.0f);							// 右移3单位
+	glBegin(GL_QUADS);										// 绘制正方形
+	glVertex3f(-1.0f, 1.0f, 0.0f);							// 左上
+	glVertex3f(1.0f, 1.0f, 0.0f);							// 右上
+	glVertex3f(1.0f, -1.0f, 0.0f);							// 左下
+	glVertex3f(-1.0f, -1.0f, 0.0f);							// 右下
+	glEnd();												// 正方形绘制结束
+
+}
+
+void DrawLesson1()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);			// 清除屏幕和深度缓存
 	glLoadIdentity();							// 重置当前的模型观察矩阵
-	return TRUE;								//  一切 OK
+}
+
+int DrawGLScene(GLvoid)	// 此过程中包括所有的绘制代码
+{
+	DrawLesson(LESSON);
+	return TRUE;		// 一切 OK
 }
 
 GLvoid ReSizeGLScene(GLsizei width, GLsizei height)
 {
-	if (height == 0)								// 防止被零除
+	if (height == 0)						// 防止被零除
 	{
 		height = 1;							// 将Height设为1
 	}
 
-	glViewport(0, 0, width, height);					// 重置当前的视口
-	glMatrixMode(GL_PROJECTION);						// 选择投影矩阵
-	glLoadIdentity();							// 重置投影矩阵
-
-												// 设置视口的大小
-	gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
-
-	glMatrixMode(GL_MODELVIEW);						// 选择模型观察矩阵
-	glLoadIdentity();							// 重置模型观察矩阵
+	glViewport(0, 0, width, height);		// 重置当前的视口
+	
+	glMatrixMode(GL_PROJECTION);			// 选择投影矩阵
+	glLoadIdentity();						// 重置投影矩阵
+	gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);	// 设置视口的大小
+	
+	glMatrixMode(GL_MODELVIEW);				// 选择模型观察矩阵
+	glLoadIdentity();						// 重置模型观察矩阵
 
 }
 
@@ -222,7 +252,7 @@ BOOL CreateGLWindow(TCHAR* title, int width, int height, int bits, bool fullscre
 		0, 0, 0							// 忽略层遮罩
 	};
 
-	if (!(g_hDC = GetDC(g_hWnd)))			// 取得设备描述表了么?
+	if (!(g_hDC = GetDC(g_hWnd)))		// 取得设备描述表了么?
 	{
 		KillGLWindow();					// 重置显示区
 		MessageBox(NULL, _T("不能创建一种相匹配的像素格式"),_T( "错误"), MB_OK | MB_ICONEXCLAMATION);
@@ -257,9 +287,9 @@ BOOL CreateGLWindow(TCHAR* title, int width, int height, int bits, bool fullscre
 		return FALSE;
 	}
 
-	ShowWindow(g_hWnd, SW_SHOW);					// 显示窗口
-	SetForegroundWindow(g_hWnd);					// 略略提高优先级
-	SetFocus(g_hWnd);								// 设置键盘的焦点至此窗口
+	ShowWindow(g_hWnd, SW_SHOW);				// 显示窗口
+	SetForegroundWindow(g_hWnd);				// 略略提高优先级
+	SetFocus(g_hWnd);							// 设置键盘的焦点至此窗口
 
 	ReSizeGLScene(width, height);				// 设置透视 GL 屏幕
 	
@@ -275,9 +305,9 @@ BOOL CreateGLWindow(TCHAR* title, int width, int height, int bits, bool fullscre
 
 GLvoid KillGLWindow(GLvoid)
 {
-	if (g_fullscreen)								// 我们处于全屏模式吗?
+	if (g_fullscreen)							// 我们处于全屏模式吗?
 	{
-		ChangeDisplaySettings(NULL, 0);					// 是的话，切换回桌面
+		ChangeDisplaySettings(NULL, 0);			// 是的话，切换回桌面
 		ShowCursor(TRUE);						// 显示鼠标指针
 	}
 	if (g_hRC)								// 我们拥有OpenGL渲染描述表吗?
@@ -366,7 +396,7 @@ int WINAPI _tWinMain2(	HINSTANCE	hInstance,				// 当前窗口实例
 		else											// 如果没有消息
 		{
 			// 绘制场景。监视ESC键和来自DrawGLScene()的退出消息
-			if (g_active)									// 程序激活的么?
+			if (g_active)								// 程序激活的么?
 			{
 				if (g_keys[VK_ESCAPE])					// ESC 按下了么?
 				{
@@ -383,7 +413,7 @@ int WINAPI _tWinMain2(	HINSTANCE	hInstance,				// 当前窗口实例
 			{
 				g_keys[VK_F1] = FALSE;					// 若是，使对应的Key数组中的值为 FALSE
 				KillGLWindow();							// 销毁当前的窗口
-				g_fullscreen = !g_fullscreen;				// 切换 全屏 / 窗口 模式
+				g_fullscreen = !g_fullscreen;			// 切换 全屏 / 窗口 模式
 				
 				// 重建 OpenGL 窗口
 				if (!CreateGLWindow(_T("NeHe's OpenGL 程序框架"), 640, 480, 16, g_fullscreen))
