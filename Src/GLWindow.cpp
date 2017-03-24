@@ -78,10 +78,162 @@ int InitGL(GLvoid)
 	return TRUE;										// 初始化 OK
 }
 
-#define LESSON		2
+#define LESSON		5
 #define _DrawLesson(l)	DrawLesson##l();
 #define DrawLesson(l)	_DrawLesson(l)
 
+//lesson5.3D空间
+//我们使用多边形和四边形创建3D物体，在这一课里，我们把三角形变为立体的金子塔形状，把四边形变为立方体。
+//Q:为什么旋转的速度与窗口的大小有关系??? 遇到现象是随着窗口的变大旋转速度越来越慢
+void DrawLesson5()
+{
+	static GLfloat	rtri(0.f);							// 用于三角形的角度
+	static GLfloat	rquad(0.f);							// 用于四边形的角度
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// 清除屏幕及深度缓存
+	glLoadIdentity();									// 重置模型观察矩阵
+	glTranslatef(-1.5f, 0.0f, -6.0f);					// 左移 1.5 单位，并移入屏幕 6.0
+	glRotatef(rtri, 1.0f, 0.0f, 0.0f);					// 绕Y轴旋转金字塔
+
+	glBegin(GL_TRIANGLES);					// 开始绘制金字塔的各个面
+	
+	glColor3f(1.0f, 0.0f, 0.0f);			// 红色
+	glVertex3f(0.0f, 1.0f, 0.0f);			// 三角形的上顶点 (前侧面)
+	glColor3f(0.0f, 1.0f, 0.0f);			// 绿色
+	glVertex3f(-1.0f, -1.0f, 1.0f);			// 三角形的左下顶点 (前侧面)
+	glColor3f(0.0f, 0.0f, 1.0f);			// 蓝色
+	glVertex3f(1.0f, -1.0f, 1.0f);			// 三角形的右下顶点 (前侧面)
+	
+	glColor3f(1.0f, 0.0f, 0.0f);			// 红色
+	glVertex3f(0.0f, 1.0f, 0.0f);			// 三角形的上顶点 (右侧面)
+	glColor3f(0.0f, 0.0f, 1.0f);			// 蓝色
+	glVertex3f(1.0f, -1.0f, 1.0f);			// 三角形的左下顶点 (右侧面)
+	glColor3f(0.0f, 1.0f, 0.0f);			// 绿色
+	glVertex3f(1.0f, -1.0f, -1.0f);			// 三角形的右下顶点 (右侧面)
+
+	glColor3f(1.0f, 0.0f, 0.0f);			// 红色
+	glVertex3f(0.0f, 1.0f, 0.0f);			// 三角形的上顶点 (后侧面)
+	glColor3f(0.0f, 1.0f, 0.0f);			// 绿色
+	glVertex3f(1.0f, -1.0f, -1.0f);			// 三角形的左下顶点 (后侧面)
+	glColor3f(0.0f, 0.0f, 1.0f);			// 蓝色
+	glVertex3f(-1.0f, -1.0f, -1.0f);		// 三角形的右下顶点 (后侧面)
+
+	glColor3f(1.0f, 0.0f, 0.0f);			// 红色
+	glVertex3f(0.0f, 1.0f, 0.0f);			// 三角形的上顶点 (左侧面)
+	glColor3f(0.0f, 0.0f, 1.0f);			// 蓝色
+	glVertex3f(-1.0f, -1.0f, -1.0f);		// 三角形的左下顶点 (左侧面)
+	glColor3f(0.0f, 1.0f, 0.0f);			// 绿色
+	glVertex3f(-1.0f, -1.0f, 1.0f);			// 三角形的右下顶点 (左侧面)
+	
+	glEnd();								// 金字塔绘制结束
+
+	glLoadIdentity();
+	glTranslatef(1.5f, 0.0f, -7.0f);		// 先右移再移入屏幕
+	glRotatef(rquad, 1.0f, 1.0f, 1.0f);		// 在XYZ轴上旋转立方体
+
+	glBegin(GL_QUADS);						// 开始绘制立方体
+	
+	glColor3f(0.0f, 1.0f, 0.0f);			// 颜色改为绿色
+	glVertex3f(1.0f, 1.0f, -1.0f);			// 四边形的右上顶点 (顶面)
+	glVertex3f(-1.0f, 1.0f, -1.0f);			// 四边形的左上顶点 (顶面)
+	glVertex3f(-1.0f, 1.0f, 1.0f);			// 四边形的左下顶点 (顶面)
+	glVertex3f(1.0f, 1.0f, 1.0f);			// 四边形的右下顶点 (顶面)
+	glColor3f(1.0f, 0.5f, 0.0f);			// 颜色改成橙色
+	glVertex3f(1.0f, -1.0f, 1.0f);			// 四边形的右上顶点(底面)
+	glVertex3f(-1.0f, -1.0f, 1.0f);			// 四边形的左上顶点(底面)
+	glVertex3f(-1.0f, -1.0f, -1.0f);		// 四边形的左下顶点(底面)
+	glVertex3f(1.0f, -1.0f, -1.0f);			// 四边形的右下顶点(底面)
+	glColor3f(1.0f, 0.0f, 0.0f);			// 颜色改成红色
+	glVertex3f(1.0f, 1.0f, 1.0f);			// 四边形的右上顶点(前面)
+	glVertex3f(-1.0f, 1.0f, 1.0f);			// 四边形的左上顶点(前面)
+	glVertex3f(-1.0f, -1.0f, 1.0f);			// 四边形的左下顶点(前面)
+	glVertex3f(1.0f, -1.0f, 1.0f);			// 四边形的右下顶点(前面)
+	glColor3f(1.0f, 1.0f, 0.0f);			// 颜色改成黄色
+	glVertex3f(1.0f, -1.0f, -1.0f);			// 四边形的右上顶点(后面)
+	glVertex3f(-1.0f, -1.0f, -1.0f);		// 四边形的左上顶点(后面)
+	glVertex3f(-1.0f, 1.0f, -1.0f);			// 四边形的左下顶点(后面)
+	glVertex3f(1.0f, 1.0f, -1.0f);			// 四边形的右下顶点(后面)
+	glColor3f(0.0f, 0.0f, 1.0f);			// 颜色改成蓝色
+	glVertex3f(-1.0f, 1.0f, 1.0f);			// 四边形的右上顶点(左面)
+	glVertex3f(-1.0f, 1.0f, -1.0f);			// 四边形的左上顶点(左面)
+	glVertex3f(-1.0f, -1.0f, -1.0f);		// 四边形的左下顶点(左面)
+	glVertex3f(-1.0f, -1.0f, 1.0f);			// 四边形的右下顶点(左面)
+	glColor3f(1.0f, 0.0f, 1.0f);			// 颜色改成紫罗兰色
+	glVertex3f(1.0f, 1.0f, -1.0f);			// 四边形的右上顶点(右面)
+	glVertex3f(1.0f, 1.0f, 1.0f);			// 四边形的左上顶点(右面)
+	glVertex3f(1.0f, -1.0f, 1.0f);			// 四边形的左下顶点(右面)
+	glVertex3f(1.0f, -1.0f, -1.0f);			// 四边形的右下顶点(右面)
+	glEnd();								// 立方体绘制结束
+
+	rtri += 0.05f;							// 增加三角形的旋转变量
+	rquad -= 0.05f;							// 减少四边形的旋转变量
+}
+
+//lesson4.旋转
+//在这一课里，我将教会你如何旋转三角形和四边形。左图中的三角形沿Y轴旋转，四边形沿着X轴旋转。
+void DrawLesson4()
+{
+	static GLfloat	rtri(0.f);							// 用于三角形的角度
+	static GLfloat	rquad(0.f);							// 用于四边形的角度
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// 清除屏幕及深度缓存
+	glLoadIdentity();									// 重置模型观察矩阵
+	glTranslatef(-1.5f, 0.0f, -6.0f);					// 左移 1.5 单位，并移入屏幕 6.0
+	glRotatef(rtri, 0.0f, 1.0f, 0.0f);					// 绕Y轴旋转三角形
+	
+	glBegin(GL_TRIANGLES);					// 绘制三角形
+	glColor3f(1.0f, 0.0f, 0.0f);			// 设置当前色为红色
+	glVertex3f(0.0f, 1.0f, 0.0f);			// 上顶点
+	glColor3f(0.0f, 1.0f, 0.0f);			// 设置当前色为绿色
+	glVertex3f(-1.0f, -1.0f, 0.0f);			// 左下
+	glColor3f(0.0f, 0.0f, 1.0f);			// 设置当前色为蓝色
+	glVertex3f(1.0f, -1.0f, 0.0f);			// 右下
+	glEnd();								// 三角形绘制结束
+	
+	glLoadIdentity();						// 重置模型观察矩阵
+	glTranslatef(1.5f, 0.0f, -6.0f);		// 右移1.5单位,并移入屏幕 6.0
+	glRotatef(rquad, 1.0f, 0.0f, 0.0f);		//  绕X轴旋转四边形
+	glColor3f(0.5f, 0.5f, 1.0f);			// 一次性将当前色设置为蓝色
+	glBegin(GL_QUADS);						// 绘制正方形
+	glVertex3f(-1.0f, 1.0f, 0.0f);			// 左上
+	glVertex3f(1.0f, 1.0f, 0.0f);			// 右上
+	glVertex3f(1.0f, -1.0f, 0.0f);			// 左下
+	glVertex3f(-1.0f, -1.0f, 0.0f);			// 右下
+	glEnd();								// 正方形绘制结束
+	rtri += 0.1f;							// 增加三角形的旋转变量
+	rquad -= 0.05f;							// 减少四边形的旋转变量
+
+}
+
+//lesson3.添加颜色
+//作为第二课的扩展，我将叫你如何使用颜色。你将理解两种着色模式，在左图中，三角形用的是光滑着色，四边形用的是平面着色。
+void DrawLesson3()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		// 清除屏幕及深度缓存
+	glLoadIdentity();										// 重置模型观察矩阵
+	glTranslatef(-1.5f, 0.0f, -6.0f);						// 左移 1.5 单位，并移入屏幕 6.0
+
+	glBegin(GL_TRIANGLES);						// 绘制三角形
+	glColor3f(1.0f, 0.0f, 0.0f);				// 设置当前色为红色
+	glVertex3f(0.0f, 1.0f, 0.0f);				// 上顶点
+	glColor3f(0.0f, 1.0f, 0.0f);				// 设置当前色为绿色
+	glVertex3f(-1.0f, -1.0f, 0.0f);				// 左下
+	glColor3f(0.0f, 0.0f, 1.0f);				// 设置当前色为蓝色
+	glVertex3f(1.0f, -1.0f, 0.0f);				// 右下
+	glEnd();									// 三角形绘制结束
+
+	glTranslatef(3.0f, 0.0f, 0.0f);				// 右移3单位
+	glColor3f(0.5f, 0.5f, 1.0f);				// 一次性将当前色设置为蓝色
+	glBegin(GL_QUADS);							// 绘制正方形
+	glVertex3f(-1.0f, 1.0f, 0.0f);				// 左上
+	glVertex3f(1.0f, 1.0f, 0.0f);				// 右上
+	glVertex3f(1.0f, -1.0f, 0.0f);				// 左下
+	glVertex3f(-1.0f, -1.0f, 0.0f);				// 右下
+	glEnd();									// 正方形绘制结束
+}
+
+//lesson2.你的第一个多边形
+//在第一个教程的基础上，我们添加了一个三角形和一个四边形。也许你认为这很简单，但你已经迈出了一大步，要知道任何在OpenGL中绘制的模型都会被分解为这两种简单的图形。
+//读完了这一课，你会学到如何在空间放置模型，并且会知道深度缓存的概念。
 void DrawLesson2()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		// 清除屏幕及深度缓存
@@ -104,6 +256,9 @@ void DrawLesson2()
 
 }
 
+//lesson1.创建一个OpenGL窗口
+//在这个教程里, 我将教你在Windows环境中创建OpenGL程序.它将显示一个空的OpenGL窗口, 可以在窗口和全屏模式下切换, 按ESC退出.它是我们以后应用程序的框架.
+//理解OpenGL如何工作非常重要，你可以在教程的末尾下载源程序，但我强烈建议你至少读一遍教程，然后再开始编程.
 void DrawLesson1()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);			// 清除屏幕和深度缓存
@@ -367,7 +522,7 @@ int WINAPI _tWinMain2(	HINSTANCE	hInstance,				// 当前窗口实例
 	BOOL	done = FALSE;	// 用来退出循环的Bool 变量
 
 	// 提示用户选择运行模式
-	if (MessageBox(NULL, _T("你想在全屏模式下运行么？"), _T("设置全屏模式"), MB_YESNO | MB_ICONQUESTION) == IDNO)
+	//if (MessageBox(NULL, _T("你想在全屏模式下运行么？"), _T("设置全屏模式"), MB_YESNO | MB_ICONQUESTION) == IDNO)
 	{
 		g_fullscreen = FALSE;	// FALSE为窗口模式
 	}
