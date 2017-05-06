@@ -1,6 +1,11 @@
 #include "../Inc/GLWindow.h"
 #include <Strsafe.h>
 #include <tchar.h>
+#include <gl/GLAUX.H>
+#include <fstream>
+#include <vector>
+
+#pragma comment(lib, "legacy_stdio_definitions.lib")
 
 namespace
 {
@@ -12,6 +17,55 @@ namespace
 	bool		g_keys[256];				// 保存键盘按键的数组
 	bool		g_active = TRUE;			// 窗口的活动标志，缺省为TRUE
 	bool		g_fullscreen = TRUE;		// 全屏标志缺省，缺省设定成全屏模式
+
+	GLuint		texture[1];							// 存储一个纹理
+
+}
+
+AUX_RGBImageRec* LoadBMP(TCHAR *Filename)		// 载入位图图象
+{
+	if (!Filename)								// 确保文件名已提供
+	{
+		return NULL;							// 如果没提供，返回 NULL
+	}
+	FILE *File = NULL;							// 文件句柄
+	 _tfopen_s(&File,Filename, _T("r"));				// 尝试打开文件
+	if (File)									// 文件存在么?
+	{
+		fclose(File);							// 关闭句柄
+		return auxDIBImageLoad(Filename);		// 载入位图并返回指针
+	}
+	return NULL;								// 如果载入失败，返回 NULL
+}
+
+int LoadGLTextures()							// 载入位图(调用上面的代码)并转换成纹理
+{
+	int Status = FALSE;							// 状态指示器
+	AUX_RGBImageRec* TextureImage[1];			// 创建纹理的存储空间
+	memset(TextureImage, 0, sizeof(void *) * 1);// 将指针设为 NULL
+						
+	// 载入位图，检查有无错误，如果位图没找到则退出
+	if (TextureImage[0] = LoadBMP(_T("Data/NeHe.bmp")))
+	{
+		Status = TRUE;									// 将 Status 设为 TRUE
+		glGenTextures(1, &texture[0]);					// 创建纹理
+														// 使用来自位图数据生成 的典型纹理
+		glBindTexture(GL_TEXTURE_2D, texture[0]);
+		// 生成纹理
+		glTexImage2D(GL_TEXTURE_2D, 0, 3, TextureImage[0]->sizeX, TextureImage[0]->sizeY, 
+			0, GL_RGB, GL_UNSIGNED_BYTE, TextureImage[0]->data);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	// 线形滤波
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// 线形滤波
+	}
+	if (TextureImage[0])							// 纹理是否存在
+	{
+		if (TextureImage[0]->data)					// 纹理图像是否存在
+		{
+			free(TextureImage[0]->data);			// 释放纹理图像占用的内存
+		}
+		free(TextureImage[0]);						// 释放图像结构
+	}
+	return Status;									// 返回 Status
 }
 
 LRESULT	CALLBACK WndProc2(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -69,6 +123,12 @@ LRESULT	CALLBACK WndProc2(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 int InitGL(GLvoid)
 {
+	if (!LoadGLTextures())								// 调用纹理载入子例程
+	{
+		return FALSE;									// 如果未能载入，返回FALSE
+	}
+	glEnable(GL_TEXTURE_2D);							// 启用纹理映射
+
 	glShadeModel(GL_SMOOTH);							// 启用阴影平滑
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);				// 黑色背景
 	glClearDepth(1.0f);									// 设置深度缓存
@@ -78,9 +138,63 @@ int InitGL(GLvoid)
 	return TRUE;										// 初始化 OK
 }
 
-#define LESSON		5
+#define LESSON		6
 #define _DrawLesson(l)	DrawLesson##l();
 #define DrawLesson(l)	_DrawLesson(l)
+
+void DrawLesson6()
+{
+	static GLfloat		xrot(0.f);								// X 旋转量
+	static GLfloat		yrot(0.f);								// Y 旋转量
+	static GLfloat		zrot(0.f);								// Z 旋转量
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		// 清除屏幕和深度缓存
+	glLoadIdentity();										// 重置当前的模型观察矩阵
+	glTranslatef(0.0f, 0.0f, -5.0f);						// 移入屏幕 5 个单位
+	
+	glRotatef(xrot, 1.0f, 0.0f, 0.0f);						// 绕X轴旋转
+	glRotatef(yrot, 0.0f, 1.0f, 0.0f);						// 绕Y轴旋转
+	glRotatef(zrot, 0.0f, 0.0f, 1.0f);						// 绕Z轴旋转
+
+	glBindTexture(GL_TEXTURE_2D, texture[0]);				// 选择纹理
+
+	glBegin(GL_QUADS);
+	// 前面
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);	// 纹理和四边形的左下
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);	// 纹理和四边形的右下
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, 1.0f);	// 纹理和四边形的右上
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, 1.0f, 1.0f);	// 纹理和四边形的左上
+																// 后面
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);	// 纹理和四边形的右下
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);	// 纹理和四边形的右上
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);	// 纹理和四边形的左上
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, -1.0f, -1.0f);	// 纹理和四边形的左下
+																// 顶面
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);	// 纹理和四边形的左上
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, 1.0f, 1.0f);	// 纹理和四边形的左下
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, 1.0f, 1.0f);	// 纹理和四边形的右下
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);	// 纹理和四边形的右上
+																// 底面
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, -1.0f, -1.0f);	// 纹理和四边形的右上
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, -1.0f, -1.0f);	// 纹理和四边形的左上
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);	// 纹理和四边形的左下
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);	// 纹理和四边形的右下
+																// 右面
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(1.0f, -1.0f, -1.0f);	// 纹理和四边形的右下
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(1.0f, 1.0f, -1.0f);	// 纹理和四边形的右上
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(1.0f, 1.0f, 1.0f);	// 纹理和四边形的左上
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(1.0f, -1.0f, 1.0f);	// 纹理和四边形的左下
+																// 左面
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);	// 纹理和四边形的左下
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, 1.0f);	// 纹理和四边形的右下
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, 1.0f, 1.0f);	// 纹理和四边形的右上
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f, 1.0f, -1.0f);	// 纹理和四边形的左上
+	glEnd();
+
+	xrot += 0.3f;								// X 轴旋转
+	yrot += 0.2f;								// Y 轴旋转
+	zrot += 0.4f;								// Z 轴旋转
+}
 
 //lesson5.3D空间
 //我们使用多边形和四边形创建3D物体，在这一课里，我们把三角形变为立体的金子塔形状，把四边形变为立方体。
@@ -513,6 +627,169 @@ void ErrorExit(LPTSTR lpszFunction)
 	ExitProcess(dw);
 }
 
+void SnapshotBMP()
+{
+	//int alignment = 4;
+	//glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+
+	unsigned char* pixcels_data = new unsigned char[640 * 480 * 3];
+	glReadPixels(0, 0, 640, 480, GL_BGR, GL_UNSIGNED_BYTE, pixcels_data);
+
+	int filesize = 54;
+	std::vector<char> bmp_header(filesize, 0);
+	{
+		//std::ifstream ifs("bmp.header", std::ios_base::binary);
+		std::ifstream ifs("dummy.bmp", std::ios_base::binary);
+		//ifs.seekg(0, std::ios_base::end);
+		//int filesize = ifs.tellg();
+		ifs.read(&bmp_header[0], filesize);
+		ifs.close();
+	}
+
+	int *width = (int*)&bmp_header[18];
+	int *height = (int*)&bmp_header[22];
+	*width = 640;
+	*height = 480;
+
+	std::ofstream ofs("snapshot.bmp", std::ios_base::binary);
+	int size = bmp_header.size();
+	ofs.write(bmp_header.data(), size);
+	ofs.write((const char*)pixcels_data, 640 * 480 * 3);
+	ofs.close();
+
+	delete[] pixcels_data;
+}
+
+#include <nvcore/Ptr.h>
+#include <nvcore/StdStream.h>
+#include <nvmath/Color.h>
+#include <nvimage/Image.h>
+#include <nvtt/nvtt.h>
+
+struct MyOutputHandler : public nvtt::OutputHandler
+{
+	MyOutputHandler(const char * name) : total(0), progress(0), percentage(0), stream(new nv::StdOutputStream(name)) {}
+	virtual ~MyOutputHandler() { delete stream; }
+
+	void setTotal(int64 t)
+	{
+		total = t + 128;
+	}
+	void setDisplayProgress(bool b)
+	{
+		verbose = b;
+	}
+
+	virtual void beginImage(int size, int width, int height, int depth, int face, int miplevel)
+	{
+		// ignore.
+	}
+
+	virtual void endImage()
+	{
+		// Ignore.
+	}
+
+	// Output data.
+	virtual bool writeData(const void * data, int size)
+	{
+		nvDebugCheck(stream != NULL);
+		stream->serialize(const_cast<void *>(data), size);
+
+		progress += size;
+		int p = int((100 * progress) / total);
+		if (verbose && p != percentage)
+		{
+			nvCheck(p >= 0);
+
+			percentage = p;
+			printf("\r%d%%", percentage);
+			fflush(stdout);
+		}
+
+		return true;
+	}
+
+	int64 total;
+	int64 progress;
+	int percentage;
+	bool verbose;
+	nv::StdOutputStream * stream;
+};
+
+struct MyErrorHandler : public nvtt::ErrorHandler
+{
+	virtual void error(nvtt::Error e)
+	{
+#if _DEBUG
+		nvDebugBreak();
+#endif
+		printf("Error: '%s'\n", nvtt::errorString(e));
+	}
+};
+
+void SnapshotDDS()
+{
+	//int alignment = 4;
+	//glPixelStorei(GL_UNPACK_ALIGNMENT, alignment);
+
+	int w = 640, h = 480, n = 3;
+	unsigned char* pixcels_data = new unsigned char[w * h * 3];
+	glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, pixcels_data);
+	nv::AutoPtr<nv::Image> img = new nv::Image;
+	{
+		img->allocate(w, h);
+		img->setFormat(n == 4 ? nv::Image::Format_ARGB : nv::Image::Format_RGB);
+
+		for (int y = 0; y < h; ++y)
+		{
+			nv::Color32* dest = img->scanline(y);
+			uint8* src = pixcels_data + y * w * 3;
+
+			for (int x = 0; x < w; ++x)
+			{
+				dest[x].r = src[x * 3 + 0];
+				dest[x].g = src[x * 3 + 1];
+				dest[x].b = src[x * 3 + 2];
+				dest[x].a = 128;
+			}
+		}
+	}
+	delete[] pixcels_data;
+
+	nvtt::Context context;
+
+	// Set input options.
+	nvtt::InputOptions inputOptions;
+	inputOptions.setTextureLayout(nvtt::TextureType_2D, w, h);
+	inputOptions.setMipmapData(img->pixels(), img->width(), img->height());
+	inputOptions.setWrapMode(nvtt::WrapMode_Clamp);
+	inputOptions.setRoundMode(nvtt::RoundMode_None);
+
+	nvtt::CompressionOptions compressionOptions;
+	compressionOptions.setFormat(nvtt::Format_DXT1);
+	compressionOptions.setQuality(nvtt::Quality_Normal);
+
+	MyErrorHandler errorHandler;
+	MyOutputHandler outputHandler("snapshot.dds");
+	if (outputHandler.stream->isError())
+	{
+		fprintf(stderr, "Error opening snapshot.dds for writting\n");
+		return;
+	}
+	int outputSize = context.estimateSize(inputOptions, compressionOptions);
+	outputHandler.setTotal(outputSize);
+	outputHandler.setDisplayProgress(true);
+
+	nvtt::OutputOptions outputOptions;
+	outputOptions.setOutputHandler(&outputHandler);
+	outputOptions.setErrorHandler(&errorHandler);
+
+	if (!context.process(inputOptions, compressionOptions, outputOptions)) {
+		return;
+	}
+}
+
 int WINAPI _tWinMain2(	HINSTANCE	hInstance,				// 当前窗口实例
 						HINSTANCE	hPrevInstance,			// 前一个窗口实例 always NULL
 						LPTSTR		lpCmdLine,				// 命令行参数
@@ -575,6 +852,18 @@ int WINAPI _tWinMain2(	HINSTANCE	hInstance,				// 当前窗口实例
 				{
 					return 0; // 如果窗口未能创建，程序退出
 				}
+			}
+			if (g_keys[(int)'D'])
+			{
+				g_keys[(int)'D'] = FALSE;
+				//MessageBox(NULL, _T("snapshot"), _T("aaa"), MB_OK);
+				SnapshotDDS();
+			}
+			if (g_keys[(int)'B'])
+			{
+				g_keys[(int)'B'] = FALSE;
+				//MessageBox(NULL, _T("snapshot"), _T("aaa"), MB_OK);
+				SnapshotBMP();
 			}
 		}
 	}
